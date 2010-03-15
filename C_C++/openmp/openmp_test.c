@@ -13,9 +13,9 @@
 #include <math.h>
 #include <omp.h>
 #include <stdio.h>
+#define __USE_BSD
 #include <stdlib.h>
 #include <sys/time.h>
-#define __USE_BSD
 #include <unistd.h>
 
 /** Call a function, but prints its name and the duration of this function. */
@@ -195,6 +195,61 @@ void lockDemo()
     omp_destroy_lock(&lock);
 }
 
+#define MONTE_CARLO_NUM  (1000000)
+
+/** Calculates Pi based on a Monte Carlo simulation
+ * Area_circle = pi*r*r
+ * Area_square = 2*r*2*r
+ * Now the chance that a random point lies within the circle is
+ * P = Area_circle/Area_square = pi/4
+ *
+ * Note: random generator is not seeded.
+ */
+void monteCarloPiGenerator()
+{
+    int i = 0;
+    const double RADIUS = 1.0;
+    int num_in_circle = 0;
+    for (i=0; i<MONTE_CARLO_NUM; i++)
+    {
+        double x = 2.0*random()/RAND_MAX - 1;
+        double y = 2.0*random()/RAND_MAX - 1;
+        //assert(x>=-1 && x<=1 && y>=-1 && y<=1);
+        if (x*x + y*y <= RADIUS*RADIUS)
+        {
+            num_in_circle++;
+        }
+    }
+    double pi = 4.0*num_in_circle/MONTE_CARLO_NUM;
+    //printf("Pi: %f\n", pi);
+    assert(pi > 3.140 && pi < 3.143);
+}
+
+/** monteCarloPiGenerator extended with a parallel for and a reduction,
+ * illustrates private variables.
+ */
+void monteCarloPiGenerator_omp()
+{
+    int i = 0;
+    const double RADIUS = 1.0;
+    int num_in_circle = 0;
+    double x;
+    double y;
+#pragma omp parallel for private(x,y) reduction(+:num_in_circle)
+    for (i=0; i<MONTE_CARLO_NUM; i++)
+    {
+        x = 2.0*random()/RAND_MAX - 1;
+        y = 2.0*random()/RAND_MAX - 1;
+        //assert(x>=-1 && x<=1 && y>=-1 && y<=1);
+        if (x*x + y*y <= RADIUS*RADIUS)
+        {
+            num_in_circle++;
+        }
+    }
+    double pi = 4.0*num_in_circle/MONTE_CARLO_NUM;
+    //printf("Pi: %f\n", pi);
+    assert(pi > 3.140 && pi < 3.143);
+}
 
 int main()
 {
@@ -209,5 +264,7 @@ int main()
     TIME(numericalIntegration_omp_parallel());
     TIME(numericalIntegration_omp_for());
     TIME(lockDemo());
+    TIME(monteCarloPiGenerator());
+    TIME(monteCarloPiGenerator_omp());
     return 0;
 }
