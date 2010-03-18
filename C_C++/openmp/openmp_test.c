@@ -7,15 +7,14 @@
 * @date 20100315
 */
 
-
-
 #include <assert.h>
 #include <math.h>
 #include <omp.h>
 #include <stdio.h>
-#define __USE_BSD
 #include <stdlib.h>
+#include <string.h>
 #include <sys/time.h>
+#define __USE_BSD
 #include <unistd.h>
 
 /** Call a function, but prints its name and the duration of this function. */
@@ -41,6 +40,7 @@ inline static void timeStop()
     printf("%10ld us\n", (tvEnd.tv_sec-tvStart.tv_sec)*1000000+
                      tvEnd.tv_usec-tvStart.tv_usec);
 }
+
 /** Each thread will say hello to standard output.
  * Illustrates the use of private variables and barriers.
  */
@@ -62,7 +62,6 @@ void listNumThreads()
     }
 
 }
-
 
 /** Calculate some sines and cosines. */
 void calculateSines()
@@ -102,7 +101,6 @@ void calculateSinesTooMuchThreads_omp()
         a[i]=sin(i)+cos(i);
     }
 }
-
 
 #define INT_STEPS (25000000)
 
@@ -179,8 +177,7 @@ void numericalIntegration_omp_for()
     assert(res > 0.6666666 && res < 0.6666667);
 }
 
-/**
- * Illustrates the use of a simple lock.
+/** Illustrates the use of a simple lock.
  */
 void lockDemo()
 {
@@ -195,7 +192,21 @@ void lockDemo()
     omp_destroy_lock(&lock);
 }
 
-#define MONTE_CARLO_NUM  (1000000)
+#define MONTE_CARLO_NUM  (10000000)
+
+/**
+ * Apparently the stdlib random is VEEEERY openmp unfriendly, it stores
+ * variable information in private context which results in a looooots of
+ * futexes. Hence a reentrant pseudo random number generator has been
+ * borrowed from: http://en.wikipedia.org/wiki/Random_number_generation
+ */
+unsigned int magic_random(unsigned int *m_z, unsigned int *m_w)
+{
+    *m_z = 36969 * (*m_z & 65535) + (*m_z >> 16);
+    *m_w = 18000 * (*m_w & 65535) + (*m_w >> 16);
+    return (*m_z << 16) + *m_w;  /* 32-bit result */
+
+}
 
 /** Calculates Pi based on a Monte Carlo simulation
  * Area_circle = pi*r*r
@@ -210,10 +221,12 @@ void monteCarloPiGenerator()
     int i = 0;
     const double RADIUS = 1.0;
     int num_in_circle = 0;
+    unsigned int mz=1;
+    unsigned int mw=2;
     for (i=0; i<MONTE_CARLO_NUM; i++)
     {
-        double x = 2.0*random()/RAND_MAX - 1;
-        double y = 2.0*random()/RAND_MAX - 1;
+        double x = 2.0*magic_random(&mz, &mw)/0xffffffff - 1;
+        double y = 2.0*magic_random(&mz, &mw)/0xffffffff - 1;
         //assert(x>=-1 && x<=1 && y>=-1 && y<=1);
         if (x*x + y*y <= RADIUS*RADIUS)
         {
@@ -226,7 +239,7 @@ void monteCarloPiGenerator()
 }
 
 /** monteCarloPiGenerator extended with a parallel for and a reduction,
- * illustrates private variables.
+ * illustrates private variables, requires a special randon number generator.
  */
 void monteCarloPiGenerator_omp()
 {
@@ -235,16 +248,23 @@ void monteCarloPiGenerator_omp()
     int num_in_circle = 0;
     double x;
     double y;
-#pragma omp parallel for private(x,y) reduction(+:num_in_circle)
+    unsigned int mz=1;
+    unsigned int mw=2;
+#pragma omp parallel private(x,y,mz,mw) reduction(+:num_in_circle)
+    {
+        mz=1;
+        mw=2;
+#pragma omp for
     for (i=0; i<MONTE_CARLO_NUM; i++)
     {
-        x = 2.0*random()/RAND_MAX - 1;
-        y = 2.0*random()/RAND_MAX - 1;
+        x = 2.0*magic_random(&mz, &mw)/0xffffffff - 1;
+        y = 2.0*magic_random(&mz, &mw)/0xffffffff - 1;
         //assert(x>=-1 && x<=1 && y>=-1 && y<=1);
         if (x*x + y*y <= RADIUS*RADIUS)
         {
             num_in_circle++;
         }
+    }
     }
     double pi = 4.0*num_in_circle/MONTE_CARLO_NUM;
     //printf("Pi: %f\n", pi);
