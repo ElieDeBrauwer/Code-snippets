@@ -5,6 +5,7 @@
 * @file openmp_test.c
 * @author Elie De Brauwer <elie[@]de-brauwer.be>
 * @date 20100315
+* @license Simplified BSD
 */
 
 #include <assert.h>
@@ -68,7 +69,7 @@ void calculateSines()
 {
     double a[NUM_CYCLES];
     int i=0;
-    for(i=0; i<NUM_CYCLES; i++)
+    for (i=0; i<NUM_CYCLES; i++)
     {
         a[i]=sin(i)+cos(i);
     }
@@ -82,7 +83,7 @@ void calculateSines_omp()
     double a[NUM_CYCLES];
     int i=0;
 #pragma omp parallel for
-    for(i=0; i<NUM_CYCLES; i++)
+    for (i=0; i<NUM_CYCLES; i++)
     {
         a[i]=sin(i)+cos(i);
     }
@@ -96,7 +97,7 @@ void calculateSinesTooMuchThreads_omp()
     double a[NUM_CYCLES];
     int i=0;
 #pragma omp parallel num_threads(20)
-    for(i=0; i<NUM_CYCLES; i++)
+    for (i=0; i<NUM_CYCLES; i++)
     {
         a[i]=sin(i)+cos(i);
     }
@@ -121,7 +122,7 @@ void numericalIntegration()
     int i=0;
     double res=0;
     double stepsize = (upper-lower)/(double)INT_STEPS;
-    for(i=0; i<INT_STEPS; i++)
+    for (i=0; i<INT_STEPS; i++)
     {
         double x = lower + (i+0.5)*stepsize;
         res += x*x*stepsize;
@@ -169,7 +170,7 @@ void numericalIntegration_omp_for()
     double x=0;
     int i=0;
 #pragma omp parallel for private(x) reduction(+:res)
-        for(i=0; i<INT_STEPS; i++)
+        for (i=0; i<INT_STEPS; i++)
         {
             x = lower + (i+0.5)*stepsize;
             res += x*x*stepsize;
@@ -199,6 +200,9 @@ void lockDemo()
  * variable information in private context which results in a looooots of
  * futexes. Hence a reentrant pseudo random number generator has been
  * borrowed from: http://en.wikipedia.org/wiki/Random_number_generation
+ *
+ * The quality of this PRNG influences obviously the quality of the Monte
+ * Carlo algorithm.
  */
 unsigned int magic_random(unsigned int *m_z, unsigned int *m_w)
 {
@@ -221,8 +225,8 @@ void monteCarloPiGenerator()
     int i = 0;
     const double RADIUS = 1.0;
     int num_in_circle = 0;
-    unsigned int mz=1;
-    unsigned int mw=2;
+    unsigned int mz = 1;
+    unsigned int mw = 2;
     for (i=0; i<MONTE_CARLO_NUM; i++)
     {
         double x = 2.0*magic_random(&mz, &mw)/0xffffffff - 1;
@@ -239,7 +243,10 @@ void monteCarloPiGenerator()
 }
 
 /** monteCarloPiGenerator extended with a parallel for and a reduction,
- * illustrates private variables, requires a special randon number generator.
+ * illustrates private variables, requires a special random number generator.
+ *
+ * firstprivate() is used to initialize each private  variable with the value
+ * from the master thread.
  */
 void monteCarloPiGenerator_omp()
 {
@@ -248,13 +255,9 @@ void monteCarloPiGenerator_omp()
     int num_in_circle = 0;
     double x;
     double y;
-    unsigned int mz=1;
-    unsigned int mw=2;
-#pragma omp parallel private(x,y,mz,mw) reduction(+:num_in_circle)
-    {
-        mz=1;
-        mw=2;
-#pragma omp for
+    unsigned int mz = 1;
+    unsigned int mw = 2;
+#pragma omp parallel for private(x,y) firstprivate(mz,mw) reduction (+:num_in_circle)
     for (i=0; i<MONTE_CARLO_NUM; i++)
     {
         x = 2.0*magic_random(&mz, &mw)/0xffffffff - 1;
@@ -265,10 +268,63 @@ void monteCarloPiGenerator_omp()
             num_in_circle++;
         }
     }
-    }
     double pi = 4.0*num_in_circle/MONTE_CARLO_NUM;
     //printf("Pi: %f\n", pi);
     assert(pi > 3.140 && pi < 3.143);
+}
+
+
+#define NUM_TASK 20000
+
+/** A simple function which does some work.
+ * @param num An input parameter, function will count to num.
+ */
+void doWork(int num)
+{
+    int res = 0;
+    int i = 0;
+    for (i = 0; i < num; i++)
+    {
+        res++;
+    }
+    assert(res == num);
+    //printf("%d doing %d\n", omp_get_thread_num(), num);
+}
+
+/** Sequential function, performs NUM_TASK calls to doWork(). */
+void taskExample()
+{
+    int i = 0;
+    for (i = 0; i < NUM_TASK; i++)
+    {
+        doWork(i);
+    }
+}
+
+/** Sequential function, performs NUM_TASK calls to doWork(), but uses
+ * OpenMP to make each call to doWork a task.
+ *
+ * Some comments, the for loop is a generating task, if it is a single task
+ * it will generate a lot of work. By making it an untied task, this
+ * generating task can be suspended as well, e.g. when too much tasks are
+ * in the queue already.
+ */
+void taskExample_omp()
+{
+    int i = 0;
+#pragma omp parallel
+    {
+//#pragma omp single
+#pragma omp task untied
+        {
+            for (i = 0; i < NUM_TASK; i++)
+            {
+#pragma omp task firstprivate(i)
+                doWork(i);
+            }
+        }
+#pragma omp taskwait
+    }
 }
 
 int main()
@@ -286,5 +342,7 @@ int main()
     TIME(lockDemo());
     TIME(monteCarloPiGenerator());
     TIME(monteCarloPiGenerator_omp());
+    TIME(taskExample());
+    TIME(taskExample_omp());
     return 0;
 }
