@@ -5,6 +5,7 @@
  * @file udp_socket_test.c
  * @author Elie De Brauwer <elie[@]de-brauwer.be>
  * @date 20100310
+ * @license Simplified BSD
  */
 
 #include <arpa/inet.h>
@@ -54,8 +55,8 @@ void * senderThread(void * __attribute((unused)) attr)
   */
 void reader()
 {
-    int tmp=0;
-    int sock=socket(AF_INET, SOCK_DGRAM, 0);
+    int tmp = 0;
+    int sock = socket(AF_INET, SOCK_DGRAM, 0);
     assert(sock != -1);
 
     struct sockaddr_in sa;
