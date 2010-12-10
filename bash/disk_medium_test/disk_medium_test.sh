@@ -15,20 +15,26 @@
 # Caution: this requires root privileges and will destroy the contents
 # of the medium under test.
 #
+# Depends on dd, sync and md5sum.
+#
 # Author: Elie De Brauwer <elie @ de-brauwer.be>
 # License: Simplified BSD
 
 
+# Operational parameters
 LARGE_CNT="750"           # This should be the medium size
 SMALL_CNT="1"             # This is the size for a small file 
 NUM_CYCLE="100"           # This number of loops
 STICKDEV="/dev/sdb"       # Device to test.
 
+# Files used during the test.
 MD5SUMFILE="sum.md5"
 ZERO_SMALL='zero_small.dmp'
 ZERO_LARGE='zero_large.dmp'
 RAND_SMALL='rand_small.dmp'
 RAND_LARGE='rand_large.dmp'
+
+VERSION="0.1"
 
 function die {
     echo "Failure: " $@
@@ -40,7 +46,7 @@ function die {
     exit 1
 }
 
-
+echo "disk_medium test.sh version $VERSION"
 echo "Creating ${SMALL_CNT} mbyte zero data"
 dd if=/dev/zero of=${ZERO_SMALL} bs=1M count=${SMALL_CNT}                         || die "Failed to create small zero data file"
 echo "Creating ${SMALL_CNT} mbyte random data"
@@ -88,3 +94,4 @@ for j in `seq 1 $NUM_CYCLE`; do
     
     md5sum -c ${MD5SUMFILE}                                                       || die "MD5 checksum failure ! "
 done 
+echo "All done!"
