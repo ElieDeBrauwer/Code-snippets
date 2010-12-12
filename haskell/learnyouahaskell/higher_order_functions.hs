@@ -63,11 +63,34 @@ numLongChains = length (filter isLong (map chain [1..1000]))
 numLongChains' :: Int          
 numLongChains' = length (filter (\xs -> length xs > 15) (map chain [1..100]))
 
--- Foldl replaces the x:xs pattern. (foldl = left fold)
+-- Foldl replaces the x:xs pattern and reduces a list to a single value (foldl = left fold)
 sum' :: (Num a) => [a] -> a
 sum' xs = foldl (\acc x -> acc +x) 0 xs
 
 -- This is equivalent with the following, but curried
 sum'' :: (Num a) => [a] -> a
-sum'' = fold (+) 0
+sum'' = foldl (+) 0
+
+-- foldl lambda takes the accumulator as the first param and the value as the second
+elem' :: (Eq a) => a -> [a] -> Bool
+elem' y ys = foldl (\acc x -> if x == y then True else acc) False ys
+
+-- Standard functions using folds
+maximum' :: (Ord a) => [a] -> a
+maximum' = foldr1 (\x acc -> if x > acc then x else acc)
+
+reverse' :: [a] -> [a]
+reverse' = foldl (\acc x -> x : acc) [] 
+
+product' :: (Num a) => [a] -> a
+product' = foldr1 (*)
+
+filter'' :: ( a -> Bool) -> [a] -> [a]
+filter'' p = foldr (\x acc -> if p x then  x :acc else acc) []
+
+head' :: [a] -> a
+head' = foldr1 (\x _ -> x)
+
+last' :: [a] -> a
+last' = foldl1 (\_ x -> x)
 
