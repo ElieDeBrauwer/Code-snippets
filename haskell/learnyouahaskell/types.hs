@@ -44,3 +44,73 @@ data Person = Person { firstName :: String,
                                     
 -}
                          
+                                   
+{- After deriving from Eq two persons can be compared  with ==, 
+   deriving from show makes it printable, read makes it readable from  
+   a string. -}
+data Person' = Person' { fName :: String,
+                         lName :: String
+                         } deriving (Eq, Show)
+                                    
+{- Here False' < True' -}
+data OrderedBool = False' | True' deriving (Eq, Ord)
+
+{-
+read: read "Saturday" :: Day
+bounded allows us to get the min/max: minBound :: Day
+enum allows us to get successor and predecessor: pred Tuesday or succ Tuesday
+or even [Monday..Sunday]
+-}
+data Day = Monday | Tuesday | Wednesday | Thursday | Friday | Saturday | Sunday
+           deriving (Eq, Ord, Show, Read, Bounded, Enum)
+                    
+
+{- Typedefs -}
+type Name = String 
+type PhoneNumber = String
+type PhoneBook = [(Name, PhoneNumber)]
+
+
+{- A binary search tree is an empty tree or a value and two other trees -}
+data Tree a = EmptyTree | Node a (Tree a) (Tree a) deriving (Show, Read, Eq)
+
+{- Creata a tree with one element -}
+singleton :: a -> Tree a
+singleton x = Node x EmptyTree EmptyTree
+
+{- Insert an elment into a tree -}
+treeInsert :: (Ord a) => a -> Tree a -> Tree a
+treeInsert x EmptyTree = singleton x
+treeInsert x (Node a left right) 
+  | x == a = Node x left right
+  | x < a  = Node a (treeInsert x left) right
+  | x > a  = Node a left (treeInsert x right)
+             
+{- Binary tree lookup -}
+treeElem :: (Ord a) => a -> Tree a -> Bool
+treeElem x EmptyTree = False
+treeElem x (Node a left right)
+  | x == a = True
+  | x < a  = treeElem x left
+  | x > a  = treeElem x right
+             
+{-
+*Main> let nums = [1,6,7,9,4,5,8,3]
+*Main> let numsTree = foldr treeInsert EmptyTree nums
+*Main> numsTree
+Node 3 (Node 1 EmptyTree EmptyTree) (Node 8 (Node 5 (Node 4 EmptyTree EmptyTree) (Node 7 (Node 6 EmptyTree EmptyTree) EmptyTree)) (Node 9 EmptyTree EmptyTree))
+-}
+
+data TrafficLight = Red | Yellow | Green
+  
+{- Instance if for making our types intances of typeclasses -}
+instance Eq TrafficLight where
+  Red == Red = True
+  Green == Green = True
+  Yellow == Yellow = True
+  _ == _ = False 
+  
+instance Show TrafficLight where 
+  show Red = "Red light"
+  show Yellow = "Yellow light"
+  show Green = "Green light"
