@@ -114,3 +114,55 @@ instance Show TrafficLight where
   show Red = "Red light"
   show Yellow = "Yellow light"
   show Green = "Green light"
+  
+  
+{- Class declaration -}
+class YesNo a where 
+  yesno :: a -> Bool
+  
+{- Instance of YesNo for integers -}
+instance YesNo Int where
+  yesno 0 = False
+  yesno _ = True
+
+{- And for lists ... -}
+instance YesNo [a] where
+  yesno [] = False
+  yesno _  = True
+
+{- Bool is trivial, but id used is a function which returns its parameter -}
+instance YesNo Bool where
+  yesno = id 
+  
+instance YesNo (Maybe a) where
+  yesno (Just _) = True
+  yesno Nothing = False
+  
+instance YesNo (Tree a) where
+  yesno EmptyTree = False
+  yesno _ = True
+  
+instance YesNo TrafficLight where
+  yesno Red = False
+  yesno _ = True
+  
+{- Mimic an if which works with YesNo's -}
+yesnoIf :: (YesNo y) => y -> a -> a -> a
+yesnoIf yesnoVal yesResult noResult = if yesno yesnoVal then yesResult else noResult
+
+
+class Functor f where
+  fmap :: (a -> b) -> f a -> f b
+  
+instance Main.Functor [] where
+  fmap = map
+  
+instance Main.Functor Maybe where
+  fmap f (Just x) = Just (f x)
+  fmap f Nothing = Nothing
+  
+
+instance Main.Functor Tree where
+  fmap f EmptyTree = EmptyTree
+  fmap f (Node x leftsub rightsub) = Node (f x) (Main.fmap f leftsub) (Main.fmap f rightsub)
+  
