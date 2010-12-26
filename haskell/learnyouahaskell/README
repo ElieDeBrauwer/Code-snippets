@@ -1,1 +1,5 @@
 Snippets based upon www.learnyouahaskell.com 
+
+* unordered_snippets are demo applications not having a main, these are 
+  typically ran through ghci
+* ordered_snippets contains small demo applications which can be compiled.

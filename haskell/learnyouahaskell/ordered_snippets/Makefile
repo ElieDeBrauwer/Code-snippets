@@ -1,9 +1,12 @@
-all: helloworld getname
+all: helloworld getname reverse
 
 helloworld: helloworld.hs
 	ghc -o $@ $^
 
 getname: getname.hs
+	ghc -o $@ $^
+
+reverse: reverse.hs
 	ghc -o $@ $^
 
 clean:
