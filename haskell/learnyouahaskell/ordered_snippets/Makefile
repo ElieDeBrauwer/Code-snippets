@@ -1,4 +1,4 @@
-all: helloworld getname reverse
+all: helloworld getname palindromes reverse shortlines toupper
 
 helloworld: helloworld.hs
 	ghc -o $@ $^
@@ -6,7 +6,16 @@ helloworld: helloworld.hs
 getname: getname.hs
 	ghc -o $@ $^
 
+palindromes: palindromes.hs
+	ghc -o $@ $^
+
 reverse: reverse.hs
+	ghc -o $@ $^
+
+shortlines: shortlines.hs
+	ghc -o $@ $^
+
+toupper: toupper.hs
 	ghc -o $@ $^
 
 clean:
