@@ -1,0 +1,25 @@
+x86
+---
+
+edb@lapelidb:~/today$ gcc bitflips_bench.c  && ./a.out 
+omap  : 37103 usec
+speedy: 28141 usec
+edb@lapelidb:~/today$ gcc -O2 ./bitflips_bench.c 
+edb@lapelidb:~/today$ ./a.out 
+omap  : 9530 usec
+speedy: 6563 usec
+
+
+On i.mx28
+---------
+
+edb@lapelidb:~/today$ arm-oe-linux-gnueabi-gcc ./bitflips_bench.c 
+root@(none):~# /tmp/a.out 
+omap  : 616839 usec
+speedy: 634944 usec
+
+
+edb@lapelidb:~/today$ arm-oe-linux-gnueabi-gcc -O2 ./bitflips_bench.c 
+root@(none):~# /tmp/a.out 
+omap  : 188134 usec
+speedy: 188049 usec
